@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>台股當沖進出場＋加倉損益模擬器</title>
+  <style>
+    body { font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans TC",sans-serif; background:#f5f7fa; padding:16px; }
+    .layout { display:grid; grid-template-columns: 1fr 1fr; gap:16px; max-width:1200px; margin:auto; }
+    .card { background:#fff; border-radius:12px; padding:16px; box-shadow:0 8px 16px rgba(0,0,0,.08); }
+    h1 { font-size:18px; margin-bottom:12px; }
+    h3 { margin-top:16px; }
+    label { font-size:13px; margin-top:6px; display:block; }
+    input { padding:6px; margin-top:4px; width:100%; }
+    button { padding:6px 10px; margin-top:10px; border:none; border-radius:6px; background:#2563eb; color:#fff; cursor:pointer; }
+    table { width:100%; border-collapse:collapse; margin-top:12px; font-size:13px; }
+    th, td { border-bottom:1px solid #e5e7eb; padding:6px; text-align:right; }
+    th { background:#f1f5f9; }
+    .left { text-align:left; }
+    .danger { color:#dc2626; cursor:pointer; }
+    .profit { color:#16a34a; }
+    .loss { color:#dc2626; }
+    .scroll-box { max-height:380px; overflow-y:auto; }
+    .tick-controls { display:flex; gap:4px; margin-top:6px; }
+    .tick-button { flex:1; padding:4px 0; border-radius:6px; border:1px solid #ccc; background:#f1f5f9; cursor:pointer; text-align:center; }
+  </style>
+</head>
+<body>
+
+<div class="layout">
+
+  <!-- LEFT PANEL -->
+  <div class="card">
+    <h1>加倉 / 場上部位</h1>
+
+    <label>成交價</label>
+    <input id="price" type="number" step="any" onkeydown="if(event.key==='Enter'){addPosition();}">
+    <div class="tick-controls">
+      <div class="tick-button" onclick="adjustPrice(-1)">-</div>
+      <div class="tick-button" onclick="adjustPrice(1)">+</div>
+    </div>
+
+    <label>張數（預設 1 張）</label>
+    <input id="lots" type="number" value="1" min="1" onkeydown="if(event.key==='Enter'){addPosition();}">
+    <div class="tick-controls">
+      <div class="tick-button" onclick="adjustLots(-1)">-</div>
+      <div class="tick-button" onclick="adjustLots(1)">+</div>
+    </div>
+
+    <button onclick="addPosition()">新增部位 / 加倉</button>
+
+    <div id="summary"></div>
+
+    <h3>加倉明細</h3>
+    <table id="positionsTable"></table>
+  </div>
+
+  <!-- RIGHT PANEL -->
+  <div class="card">
+    <h1>各價位出場損益</h1>
+    <div class="scroll-box">
+      <table id="resultTable"></table>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const FEE_RATE = 0.000851954;
+const TAX_RATE = 0.0015;
+const LOT_SHARES = 1000;
+const FULL_TICK_RANGE = 30;
+const VIEW_TICK_RANGE = 30;
+
+let positions = [];
+
+function fmt(num, tick=null) {
+  if (tick) {
+    const decimals = tick >= 1 ? 0 : tick.toString().split('.')[1].length;
+    return Number(num).toFixed(decimals);
+  }
+  return Number(num).toLocaleString('en-US', { maximumFractionDigits: 3 });
+}
+function fmtInt(num) { return Math.round(num).toLocaleString('en-US'); }
+
+function getTick(price) {
+  if (price < 10) return 0.01;
+  if (price < 50) return 0.05;
+  if (price < 100) return 0.1;
+  if (price < 500) return 0.5;
+  if (price < 1000) return 1;
+  return 5;
+}
+
+function adjustPrice(direction) {
+  const priceInput = document.getElementById('price');
+  const current = parseFloat(priceInput.value) || 0;
+  const tick = getTick(current);
+  const newPrice = current + tick*direction;
+  const decimals = tick >= 1 ? 0 : tick.toString().split('.')[1].length;
+  priceInput.value = newPrice.toFixed(decimals);
+}
+
+function adjustLots(direction) {
+  const lotsInput = document.getElementById('lots');
+  let current = parseInt(lotsInput.value) || 1;
+  current += direction;
+  if(current < 1) current = 1;
+  lotsInput.value = current;
+}
+
+function addPosition() {
+  const price = parseFloat(document.getElementById('price').value);
+  const lots = parseInt(document.getElementById('lots').value);
+  if (!price || !lots) return;
+  positions.push({ price, shares: lots * LOT_SHARES });
+  render();
+}
+
+function removePosition(index) { positions.splice(index, 1); render(); }
+
+function calcTotal() {
+  let shares = 0, cost = 0;
+  positions.forEach(p => { shares += p.shares; cost += p.price * p.shares; });
+  return { shares, cost, avg: cost / shares };
+}
+
+function render() {
+  if (!positions.length) { document.getElementById('positionsTable').innerHTML=''; document.getElementById('summary').innerHTML=''; document.getElementById('resultTable').innerHTML=''; return; }
+
+  const total = calcTotal();
+  const avgTick = getTick(total.avg);
+  const basePrice = Math.round(total.avg / avgTick) * avgTick;
+
+  let pHtml = `<tr><th class="left">序</th><th>成交價</th><th>張數</th><th>成本</th><th>刪</th></tr>`;
+  positions.forEach((p,i)=>{ pHtml+=`<tr><td class="left">${i+1}</td><td>${fmt(p.price,getTick(p.price))}</td><td>${p.shares/LOT_SHARES}</td><td>${fmt(p.price*p.shares)}</td><td class="danger" onclick="removePosition(${i})">✕</td></tr>`; });
+  document.getElementById('positionsTable').innerHTML = pHtml;
+
+  document.getElementById('summary').innerHTML = `<p>總張數：${total.shares/LOT_SHARES}｜總股數：${fmt(total.shares)}</p><p>場上平均成本：${fmt(total.avg, avgTick)}｜Tick：${avgTick}</p>`;
+
+  let rHtml = `<tr><th class="left">賣出價</th><th>總損益</th></tr>`;
+  for(let i=FULL_TICK_RANGE;i>=-FULL_TICK_RANGE;i--){
+    const sellPrice = basePrice + i*avgTick;
+    const sellAmount = sellPrice*total.shares;
+    const fee = (sellAmount+total.cost)*FEE_RATE;
+    const tax = sellAmount*TAX_RATE;
+    const profit = Math.round(sellAmount-total.cost-fee-tax);
+    const cls = profit>=0?'profit':'loss';
+    rHtml+=`<tr><td class="left">${fmt(sellPrice, avgTick)}</td><td class="${cls}">${profit.toLocaleString()}</td></tr>`;
+  }
+  document.getElementById('resultTable').innerHTML=rHtml;
+
+  const rows = document.querySelectorAll('#resultTable tr');
+  const midIndex = FULL_TICK_RANGE + 1;
+  const targetRow = rows[midIndex];
+  if(targetRow) targetRow.scrollIntoView({block:'center'});
+}
+</script>
+</body>
+</html>
