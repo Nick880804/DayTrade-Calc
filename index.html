@@ -4,98 +4,59 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>當沖計算機</title>
+  <title>DT Cal</title>
+
   <style>
     body {
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans TC", sans-serif;
       background: #f5f7fa;
-      padding: 16px;
+      padding: 1px;
     }
 
-    .layout {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 16px;
+    /* ===== 三欄總版型 ===== */
+    .container {
       max-width: 1200px;
       margin: auto;
+      display: grid;
+      grid-template-columns: 360px 1fr 1fr;
+      gap: 12px;
+    }
+
+    @media(max-width:1000px) {
+      .container {
+        grid-template-columns: 1fr;
+      }
     }
 
     .card {
       background: #fff;
       border-radius: 12px;
-      padding: 16px;
+      padding: 12px;
       box-shadow: 0 8px 16px rgba(0, 0, 0, .08);
     }
 
-    h1 {
-      font-size: 20px;
-      margin-bottom: 12px;
-    }
-
-    h3 {
-      margin-top: 16px;
-    }
-
-    label {
+    .header {
+      font-weight: 600;
       font-size: 15px;
-      margin-top: 6px;
-      display: block;
+      padding-bottom: 6px;
+      border-bottom: 1px solid #e5e7eb;
+      margin-bottom: 8px;
     }
 
     input {
-      padding: 6px;
+      width: 100%;
+      padding: 5px;
       margin-top: 4px;
-      width: 97%;
     }
 
     button {
-      padding: 10px 15px;
-      margin-top: 10px;
+      width: 100%;
+      padding: 10px;
+      margin-top: 8px;
       border: none;
       border-radius: 6px;
       background: #2563eb;
       color: #fff;
-      cursor: pointer;
-    }
-
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 12px;
-      font-size: 20px;
-    }
-
-    th,
-    td {
-      border-bottom: 1px solid #e5e7eb;
-      padding: 6px;
-      text-align: right;
-    }
-
-    th {
-      background: #f1f5f9;
-    }
-
-    .left {
-      text-align: left;
-    }
-
-    .danger {
-      color: #dc2626;
-      cursor: pointer;
-    }
-
-    .profit {
-      color: #dc2626;
-    }
-
-    .loss {
-      color: #16a34a;
-    }
-
-    .scroll-box {
-      max-height: 300px;
-      overflow-y: auto;
     }
 
     .tick-controls {
@@ -106,54 +67,85 @@
 
     .tick-button {
       flex: 1;
-      padding: 4px 0;
-      border-radius: 6px;
+      padding: 6px 0;
       border: 1px solid #ccc;
+      border-radius: 6px;
       background: #f1f5f9;
-      cursor: pointer;
       text-align: center;
+      cursor: pointer;
     }
 
     .num-pad {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
       gap: 4px;
-      margin-top: 1px;
+      margin-top: 6px;
     }
 
     .num-pad button {
-      padding: 16px;
+      padding: 12px;
       font-size: 18px;
       font-weight: bold;
-      color: #000;
       background: #f1f5f9;
       border: 1px solid #ccc;
-      border-radius: 6px;
-      cursor: pointer;
+      color: #000;
     }
 
-    .num-pad-row-4 {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 4px;
-      margin-top: 4px;
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 16px;
+    }
+
+    th,
+    td {
+      border-bottom: 1px solid #e5e7eb;
+      padding: 6px;
+      text-align: right;
+    }
+
+    th {
+      background: #f1f5f9
+    }
+
+    .left {
+      text-align: left
+    }
+
+    .danger {
+      color: #dc2626;
+      cursor: pointer
+    }
+
+    .profit {
+      color: #dc2626
+    }
+
+    .loss {
+      color: #16a34a
+    }
+
+    .scroll-box {
+      max-height: 420px;
+      overflow-y: auto;
     }
   </style>
 </head>
 
 <body>
 
-  <div class="layout">
+  <div class="container">
 
-    <!-- LEFT PANEL -->
+    <!-- ===== 欄 1：Cal ===== -->
     <div class="card">
-      <h1>加倉 / 場上部位</h1>
+      <div class="header">Cal</div>
 
-      <label>成交價</label>
-      <input id="price" type="text" inputmode="decimal" step="any" onkeydown="if(event.key==='Enter'){addPosition();}">
+      <input id="price" inputmode="decimal" onkeydown="if(event.key==='Enter'){addPosition();}">
+
       <div class="tick-controls">
         <div class="tick-button" onclick="adjustPrice(-1)">-</div>
         <div class="tick-button" onclick="adjustPrice(1)">+</div>
+        <div class="tick-button" onclick="addPosition()">Buy</div>
       </div>
 
       <div class="num-pad">
@@ -171,28 +163,27 @@
         <button onclick="deletePrice()">DEL</button>
       </div>
 
-      <label>張數（預設 1 張）</label>
-      <input id="lots" type="number" value="1" min="1" onkeydown="if(event.key==='Enter'){addPosition();}">
+      <input id="lots" type="number" value="1">
+
       <div class="tick-controls">
         <div class="tick-button" onclick="adjustLots(-1)">-</div>
         <div class="tick-button" onclick="adjustLots(1)">+</div>
+
       </div>
 
-      <button onclick="addPosition()">新增部位 / 加倉</button>
-
+      <!-- <button onclick="addPosition()">Buy</button> -->
     </div>
 
-    <!-- RIGHT PANEL -->
+    <!-- ===== 欄 2：Summary + Detail ===== -->
     <div class="card">
-      <h1>總結資訊 & 損益</h1>
-
-      <!-- 總結資訊 + 加倉明細 -->
-      <div id="summary"></div>
-
-      <h3>加倉明細</h3>
+      <div class="header">Detail</div>
+      <div class="header" id="summary"></div>
       <table id="positionsTable"></table>
+    </div>
 
-      <h3>各價位出場損益</h3>
+    <!-- ===== 欄 3：Sell / Profit ===== -->
+    <div class="card">
+      <div class="header">Sell / Profit</div>
       <div class="scroll-box">
         <table id="resultTable"></table>
       </div>
@@ -205,117 +196,52 @@
     const TAX_RATE = 0.0015;
     const LOT_SHARES = 1000;
     const FULL_TICK_RANGE = 30;
-
     let positions = [];
 
-    function appendPrice(val) {
-      const input = document.getElementById('price');
-      if (val === '.' && input.value.includes('.')) return;
-      input.value += val;
-    }
-
-    function deletePrice() {
-      const input = document.getElementById('price');
-      input.value = input.value.slice(0, -1);
-    }
-
-    function getTick(price) {
-      if (price < 10) return 0.01;
-      if (price < 50) return 0.05;
-      if (price < 100) return 0.1;
-      if (price < 500) return 0.5;
-      if (price < 1000) return 1;
-      return 5;
-    }
-
-    function adjustPrice(direction) {
-      const priceInput = document.getElementById('price');
-      const current = parseFloat(priceInput.value) || 0;
-      const tick = getTick(current);
-      const newPrice = current + tick * direction;
-      const decimals = tick >= 1 ? 0 : tick.toString().split('.')[1].length;
-      priceInput.value = newPrice.toFixed(decimals);
-    }
-
-    function adjustLots(direction) {
-      const lotsInput = document.getElementById('lots');
-      let current = parseInt(lotsInput.value) || 1;
-      current += direction;
-      if (current < 1) current = 1;
-      lotsInput.value = current;
-    }
-
-    function addPosition() {
-      const price = parseFloat(document.getElementById('price').value);
-      const lots = parseInt(document.getElementById('lots').value);
-      if (!price || !lots) return;
-      positions.push({ price, shares: lots * LOT_SHARES });
-      render();
-    }
-
-    function removePosition(index) {
-      positions.splice(index, 1);
-      render();
-    }
-
-    function calcTotal() {
-      let shares = 0,
-        cost = 0;
-      positions.forEach(p => {
-        shares += p.shares;
-        cost += p.price * p.shares;
-      });
-      return { shares, cost, avg: cost / shares };
-    }
-
-    function fmt(num, tick = null) {
-      if (tick) {
-        const decimals = tick >= 1 ? 0 : tick.toString().split('.')[1].length;
-        return Number(num).toFixed(decimals);
-      }
-      return Number(num).toLocaleString('en-US', { maximumFractionDigits: 3 });
-    }
+    function appendPrice(v) { if (v === '.' && price.value.includes('.')) return; price.value += v; }
+    function deletePrice() { price.value = price.value.slice(0, -1); }
+    function getTick(p) { if (p < 10) return 0.01; if (p < 50) return 0.05; if (p < 100) return 0.1; if (p < 500) return 0.5; if (p < 1000) return 1; return 5; }
+    function adjustPrice(d) { const c = parseFloat(price.value) || 0, t = getTick(c); price.value = (c + t * d).toFixed(t >= 1 ? 0 : t.toString().split('.')[1].length); }
+    function adjustLots(d) { lots.value = Math.max(1, (parseInt(lots.value) || 1) + d); }
+    function addPosition() { const p = parseFloat(price.value), l = parseInt(lots.value); if (!p || !l) return; positions.push({ price: p, shares: l * LOT_SHARES }); render(); }
+    function removePosition(i) { positions.splice(i, 1); render(); }
+    function calcTotal() { let s = 0, c = 0; positions.forEach(p => { s += p.shares; c += p.price * p.shares }); return { shares: s, cost: c, avg: c / s }; }
+    function fmt(n, t = null) { if (t) { const d = t >= 1 ? 0 : t.toString().split('.')[1].length; return Number(n).toFixed(d); } return Number(n).toLocaleString(); }
 
     function render() {
-      if (!positions.length) {
-        document.getElementById('positionsTable').innerHTML = '';
-        document.getElementById('summary').innerHTML = '';
-        document.getElementById('resultTable').innerHTML = '';
-        return;
-      }
+      if (!positions.length) { summary.innerHTML = ''; positionsTable.innerHTML = ''; resultTable.innerHTML = ''; return; }
+      const t = calcTotal(), tick = getTick(t.avg), base = Math.round(t.avg / tick) * tick;
 
-      const total = calcTotal();
-      const avgTick = getTick(total.avg);
-      const basePrice = Math.round(total.avg / avgTick) * avgTick;
+      summary.innerHTML = `Total：${t.shares / LOT_SHARES} ｜ Avg cost：${fmt(t.avg, tick)}`;
 
-      // 加倉明細
-      let pHtml = `<tr><th class="left">序</th><th>成交價</th><th>張數</th><th>刪</th></tr>`;
-      positions.forEach((p, i) => {
-        pHtml += `<tr><td class="left">${i + 1}</td><td>${fmt(p.price, getTick(p.price))}</td><td>${p.shares / LOT_SHARES}</td><td class="danger" onclick="removePosition(${i})">✕</td></tr>`;
-      });
-      document.getElementById('positionsTable').innerHTML = pHtml;
+      let p = `<tr><th class="left">Seq</th><th>Price</th><th>Unit</th><th>Del</th></tr>`;
+      positions.forEach((x, i) => p += `<tr><td class="left">${i + 1}</td><td>${fmt(x.price, getTick(x.price))}</td><td>${x.shares / LOT_SHARES}</td><td class="danger" onclick="removePosition(${i})">✕</td></tr>`);
+      positionsTable.innerHTML = p;
 
-      // 總結資訊
-      document.getElementById('summary').innerHTML =
-        `<p>總張數：${total.shares / LOT_SHARES} ｜ 平均成本：${fmt(total.avg, avgTick)}</p>`;
-      // 損益表
-      let rHtml = `<tr><th class="left">賣出價</th><th>總損益</th></tr>`;
+      let r = `<tr><th class="left">Sell</th><th>Profit</th></tr>`;
       for (let i = FULL_TICK_RANGE; i >= -FULL_TICK_RANGE; i--) {
-        const sellPrice = basePrice + i * avgTick;
-        const sellAmount = sellPrice * total.shares;
-        const fee = (sellAmount + total.cost) * FEE_RATE;
-        const tax = sellAmount * TAX_RATE;
-        const profit = Math.round(sellAmount - total.cost - fee - tax);
-        const cls = profit >= 0 ? 'profit' : 'loss';
-        rHtml += `<tr><td class="left">${fmt(sellPrice, avgTick)}</td><td class="${cls}">${profit.toLocaleString()}</td></tr>`;
+        const sp = base + i * tick, sa = sp * t.shares;
+        const pf = Math.round(sa - t.cost - (sa + t.cost) * FEE_RATE - sa * TAX_RATE);
+        r += `<tr><td class="left">${fmt(sp, tick)}</td><td class="${pf >= 0 ? 'profit' : 'loss'}">${pf.toLocaleString()}</td></tr>`;
       }
-      document.getElementById('resultTable').innerHTML = rHtml;
+      resultTable.innerHTML = r;
+      scrollToAvg();
+    }
+    function scrollToAvg() {
+      const rows = resultTable.querySelectorAll("tr");
+      if (rows.length < 2) return;
 
-      // 滾動到平均成本附近
-      const rows = document.querySelectorAll('#resultTable tr');
-      const midIndex = FULL_TICK_RANGE + 1;
-      const targetRow = rows[midIndex];
-      if (targetRow) targetRow.scrollIntoView({ block: 'center' });
+      const t = calcTotal();
+      const tick = getTick(t.avg);
+      const target = Math.round(t.avg / tick) * tick;
+
+      for (let i = 1; i < rows.length; i++) {
+        const price = parseFloat(rows[i].children[0].innerText.replace(/,/g, ""));
+        if (price === target) {
+          rows[i].scrollIntoView({ behavior: "smooth", block: "center" });
+          break;
+        }
+      }
     }
   </script>
 
