@@ -150,7 +150,7 @@
       <h1>加倉 / 場上部位</h1>
 
       <label>成交價</label>
-      <input id="price" type="number" step="any" onkeydown="if(event.key==='Enter'){addPosition();}">
+      <input id="price" type="text" inputmode="decimal" step="any" onkeydown="if(event.key==='Enter'){addPosition();}">
       <div class="tick-controls">
         <div class="tick-button" onclick="adjustPrice(-1)">-</div>
         <div class="tick-button" onclick="adjustPrice(1)">+</div>
