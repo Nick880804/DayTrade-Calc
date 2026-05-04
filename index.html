@@ -13,7 +13,6 @@
       padding: 1px;
     }
 
-    /* ===== 三欄總版型 ===== */
     .container {
       max-width: 1200px;
       margin: auto;
@@ -129,6 +128,15 @@
       max-height: 420px;
       overflow-y: auto;
     }
+
+    .r-value {
+      color: #2563eb;
+      font-weight: bold;
+    }
+
+    .target {
+      font-weight: bold;
+    }
   </style>
 </head>
 
@@ -136,7 +144,6 @@
 
   <div class="container">
 
-    <!-- ===== 欄 1：Cal ===== -->
     <div class="card">
       <div class="header">Cal</div>
 
@@ -168,20 +175,15 @@
       <div class="tick-controls">
         <div class="tick-button" onclick="adjustLots(-1)">-</div>
         <div class="tick-button" onclick="adjustLots(1)">+</div>
-
       </div>
-
-      <!-- <button onclick="addPosition()">Buy</button> -->
     </div>
 
-    <!-- ===== 欄 2：Summary + Detail ===== -->
     <div class="card">
       <div class="header">Detail</div>
       <div class="header" id="summary"></div>
       <table id="positionsTable"></table>
     </div>
 
-    <!-- ===== 欄 3：Sell / Profit ===== -->
     <div class="card">
       <div class="header">Sell / Profit</div>
       <div class="scroll-box">
@@ -192,41 +194,173 @@
   </div>
 
   <script>
-    const FEE_RATE = 0.000851954;
+    const FEE_RATE = 0.000399;
     const TAX_RATE = 0.0015;
     const LOT_SHARES = 1000;
-    const FULL_TICK_RANGE = 30;
-    let positions = [];
+    const FULL_TICK_RANGE = 45;
 
-    function appendPrice(v) { if (v === '.' && price.value.includes('.')) return; price.value += v; }
-    function deletePrice() { price.value = price.value.slice(0, -1); }
-    function getTick(p) { if (p < 10) return 0.01; if (p < 50) return 0.05; if (p < 100) return 0.1; if (p < 500) return 0.5; if (p < 1000) return 1; return 5; }
-    function adjustPrice(d) { const c = parseFloat(price.value) || 0, t = getTick(c); price.value = (c + t * d).toFixed(t >= 1 ? 0 : t.toString().split('.')[1].length); }
-    function adjustLots(d) { lots.value = Math.max(1, (parseInt(lots.value) || 1) + d); }
-    function addPosition() { const p = parseFloat(price.value), l = parseInt(lots.value); if (!p || !l) return; positions.push({ price: p, shares: l * LOT_SHARES }); render(); }
-    function removePosition(i) { positions.splice(i, 1); render(); }
-    function calcTotal() { let s = 0, c = 0; positions.forEach(p => { s += p.shares; c += p.price * p.shares }); return { shares: s, cost: c, avg: c / s }; }
-    function fmt(n, t = null) { if (t) { const d = t >= 1 ? 0 : t.toString().split('.')[1].length; return Number(n).toFixed(d); } return Number(n).toLocaleString(); }
+    let positions = [];
+    let stopLossProfit = null;
+
+    function appendPrice(v) {
+      if (v === '.' && price.value.includes('.')) return;
+      price.value += v;
+    }
+
+    function deletePrice() {
+      price.value = price.value.slice(0, -1);
+    }
+
+    function getTick(p) {
+      if (p < 10) return 0.01;
+      if (p < 50) return 0.05;
+      if (p < 100) return 0.1;
+      if (p < 500) return 0.5;
+      if (p < 1000) return 1;
+      return 5;
+    }
+
+    function adjustPrice(d) {
+      const c = parseFloat(price.value) || 0;
+      const t = getTick(c);
+      price.value = (c + t * d).toFixed(t >= 1 ? 0 : t.toString().split('.')[1].length);
+    }
+
+    function adjustLots(d) {
+      lots.value = Math.max(1, (parseInt(lots.value) || 1) + d);
+    }
+
+    function addPosition() {
+      const p = parseFloat(price.value), l = parseInt(lots.value);
+      if (!p || !l) return;
+      positions.push({ price: p, shares: l * LOT_SHARES });
+      render();
+    }
+
+    function removePosition(i) {
+      positions.splice(i, 1);
+      render();
+    }
+
+    function calcTotal() {
+      let s = 0, c = 0;
+      positions.forEach(p => {
+        s += p.shares;
+        c += p.price * p.shares;
+      });
+      return { shares: s, cost: c, avg: c / s };
+    }
+
+    function fmt(n, t = null) {
+      if (t) {
+        const d = t >= 1 ? 0 : t.toString().split('.')[1].length;
+        return Number(n).toFixed(d);
+      }
+      return Number(n).toLocaleString();
+    }
+
+    function selectStopLoss(pf) {
+      stopLossProfit = pf;
+      render();
+    }
+
+    function getRLabel(pf) {
+      if (!stopLossProfit || pf <= 0) return "";
+
+      const Rabs = Math.abs(stopLossProfit);
+
+      const diff2 = Math.abs(pf - 2 * Rabs);
+      const diff3 = Math.abs(pf - 3 * Rabs);
+      const diff5 = Math.abs(pf - 5 * Rabs);
+
+      const min = Math.min(diff2, diff3, diff5);
+
+      if (min === diff2 && diff2 < Rabs * 0.2) return "🎯2R";
+      if (min === diff3 && diff3 < Rabs * 0.2) return "🔥3R";
+      if (min === diff5 && diff5 < Rabs * 0.2) return "🚀5R";
+
+      return "";
+    }
 
     function render() {
-      if (!positions.length) { summary.innerHTML = ''; positionsTable.innerHTML = ''; resultTable.innerHTML = ''; return; }
-      const t = calcTotal(), tick = getTick(t.avg), base = Math.round(t.avg / tick) * tick;
+      if (!positions.length) {
+        summary.innerHTML = '';
+        positionsTable.innerHTML = '';
+        resultTable.innerHTML = '';
+        return;
+      }
+
+      const t = calcTotal();
+      const tick = getTick(t.avg);
+      const base = Math.round(t.avg / tick) * tick;
 
       summary.innerHTML = `Total：${t.shares / LOT_SHARES} ｜ Avg cost：${fmt(t.avg, tick)}`;
 
       let p = `<tr><th class="left">Seq</th><th>Price</th><th>Unit</th><th>Del</th></tr>`;
-      positions.forEach((x, i) => p += `<tr><td class="left">${i + 1}</td><td>${fmt(x.price, getTick(x.price))}</td><td>${x.shares / LOT_SHARES}</td><td class="danger" onclick="removePosition(${i})">✕</td></tr>`);
+      positions.forEach((x, i) =>
+        p += `<tr>
+          <td class="left">${i + 1}</td>
+          <td>${fmt(x.price, getTick(x.price))}</td>
+          <td>${x.shares / LOT_SHARES}</td>
+          <td class="danger" onclick="removePosition(${i})">✕</td>
+        </tr>`
+      );
       positionsTable.innerHTML = p;
 
-      let r = `<tr><th class="left">Sell</th><th>Profit</th></tr>`;
+      let r = `<tr>
+        <th class="left">Stop</th>
+        <th class="left">Sell</th>
+        <th>Profit</th>
+        <th>R</th>
+      </tr>`;
+
       for (let i = FULL_TICK_RANGE; i >= -FULL_TICK_RANGE; i--) {
-        const sp = base + i * tick, sa = sp * t.shares;
-        const pf = Math.round(sa - t.cost - (sa + t.cost) * FEE_RATE - sa * TAX_RATE);
-        r += `<tr><td class="left">${fmt(sp, tick)}</td><td class="${pf >= 0 ? 'profit' : 'loss'}">${pf.toLocaleString()}</td></tr>`;
+
+        const sp = base + i * tick;
+        const sa = sp * t.shares;
+
+        const pf = Math.round(
+          sa - t.cost - (sa + t.cost) * FEE_RATE - sa * TAX_RATE
+        );
+
+let rValue = "";
+
+if (stopLossProfit && pf > 0) {
+  const R = pf / Math.abs(stopLossProfit);
+  const RFloor = Math.floor(R);
+
+  let isBold = false;
+
+  // ⭐ 只要「剛超過整數R」就粗體
+  if (RFloor >= 1 && RFloor <= 10) {
+    // 抓剛突破區間（避免整段都粗）
+    if (R >= RFloor && R < RFloor + 0.2) {
+      isBold = true;
+    }
+  }
+
+  rValue = `<span style="
+    color:#000;
+    font-weight:${isBold ? 'bold' : 'normal'};
+  ">${R.toFixed(1)}R</span>`;
+}
+
+        r += `<tr>
+          <td class="left">
+            <input type="checkbox"
+              ${pf === stopLossProfit ? "checked" : ""}
+              onclick="selectStopLoss(${pf})">
+          </td>
+          <td class="left">${fmt(sp, tick)}</td>
+          <td class="${pf >= 0 ? 'profit' : 'loss'}">${pf.toLocaleString()}</td>
+          <td>${rValue}</td>
+        </tr>`;
       }
+
       resultTable.innerHTML = r;
       scrollToAvg();
     }
+
     function scrollToAvg() {
       const rows = resultTable.querySelectorAll("tr");
       if (rows.length < 2) return;
@@ -236,7 +370,7 @@
       const target = Math.round(t.avg / tick) * tick;
 
       for (let i = 1; i < rows.length; i++) {
-        const price = parseFloat(rows[i].children[0].innerText.replace(/,/g, ""));
+        const price = parseFloat(rows[i].children[1].innerText.replace(/,/g, ""));
         if (price === target) {
           rows[i].scrollIntoView({ behavior: "smooth", block: "center" });
           break;
